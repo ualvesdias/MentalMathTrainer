@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Mental Math</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242836;
+      --border: #2e3345;
+      --text: #e8eaef;
+      --text-muted: #8b90a0;
+      --accent: #6c8cff;
+      --accent-hover: #5578f5;
+      --success: #3dd68c;
+      --error: #f56565;
+      --warning: #f6ad55;
+      --radius: 12px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    html { font-size: 16px; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      line-height: 1.5;
+    }
+
+    .app {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0 20px;
+    }
+
+    header h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .icon-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: background 0.15s, color 0.15s;
+    }
+    .icon-btn:hover { background: var(--border); color: var(--text); }
+
+    .screen { display: none; flex: 1; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* ── Selection ── */
+    .categories { flex: 1; overflow-y: auto; padding-bottom: 16px; }
+
+    .category {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      cursor: pointer;
+      user-select: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .category-header:hover { background: var(--surface2); }
+    .category-header .chevron { transition: transform 0.2s; color: var(--text-muted); }
+    .category.open .chevron { transform: rotate(180deg); }
+
+    .category-body {
+      display: none;
+      padding: 0 12px 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .category.open .category-body { display: flex; }
+
+    .chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .chip:hover { border-color: var(--accent); color: var(--text); }
+    .chip.selected {
+      background: rgba(108, 140, 255, 0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .start-bar {
+      padding: 12px 0 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .selection-count {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    /* ── Practice ── */
+    .practice-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 20px 0;
+    }
+
+    .timer {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.05em;
+    }
+    .timer.running { color: var(--accent); }
+
+    .problem {
+      font-size: clamp(1.6rem, 6vw, 2.2rem);
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+
+    .problem-type-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+
+    .answer-form {
+      width: 100%;
+      max-width: 280px;
+    }
+
+    .answer-input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 1.25rem;
+      text-align: center;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      outline: none;
+      font-variant-numeric: tabular-nums;
+      transition: border-color 0.15s;
+    }
+    .answer-input:focus { border-color: var(--accent); }
+    .answer-input.correct { border-color: var(--success); }
+    .answer-input.wrong { border-color: var(--error); }
+
+    .feedback {
+      text-align: center;
+      min-height: 1.5em;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    .feedback.correct { color: var(--success); }
+    .feedback.wrong { color: var(--error); }
+
+    .practice-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .btn-secondary {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-secondary:hover { background: var(--border); }
+
+    /* ── Stats ── */
+    .stats-list { flex: 1; overflow-y: auto; }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+
+    .stat-card h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+    .stat-item .value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-item .label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .accuracy-bar {
+      margin-top: 10px;
+      height: 6px;
+      background: var(--surface2);
+      border-radius: 3px;
+      overflow: hidden;
+      display: flex;
+    }
+    .accuracy-bar .correct-part { background: var(--success); }
+    .accuracy-bar .wrong-part { background: var(--error); }
+
+    .empty-stats {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 40px 20px;
+      font-size: 0.95rem;
+    }
+
+    .stats-actions {
+      display: flex;
+      gap: 10px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .stats-actions .btn { flex: 1; font-size: 0.85rem; padding: 10px; }
+    .btn-danger { background: transparent; border: 1px solid var(--error); color: var(--error); }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Mental Math</h1>
+      <button class="icon-btn" id="btnStats" title="Estatísticas" aria-label="Estatísticas">📊</button>
+    </header>
+
+    <!-- Selection Screen -->
+    <div class="screen active" id="screenSelect">
+      <div class="categories" id="categories"></div>
+      <div class="start-bar">
+        <div class="selection-count" id="selectionCount">Nenhum tipo selecionado</div>
+        <button class="btn btn-primary" id="btnStart" disabled>Iniciar treino</button>
+      </div>
+    </div>
+
+    <!-- Practice Screen -->
+    <div class="screen" id="screenPractice">
+      <div class="practice-area">
+        <div class="timer" id="timer">0.00s</div>
+        <div>
+          <div class="problem-type-label" id="problemLabel"></div>
+          <div class="problem" id="problem"></div>
+        </div>
+        <form class="answer-form" id="answerForm">
+          <input
+            type="text"
+            class="answer-input"
+            id="answerInput"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            inputmode="text"
+            enterkeyhint="done"
+            placeholder="Resposta"
+          >
+          <p class="hint" id="answerHint">Pressione Enter para enviar</p>
+        </form>
+        <div class="feedback" id="feedback"></div>
+        <div class="practice-meta">
+          <span id="sessionScore">0 acertos</span>
+          <span id="sessionTotal">0 contas</span>
+        </div>
+        <button class="btn-secondary" id="btnStop">Parar treino</button>
+      </div>
+    </div>
+
+    <!-- Stats Screen -->
+    <div class="screen" id="screenStats">
+      <div class="stats-list" id="statsList"></div>
+      <div class="stats-actions">
+        <button class="btn btn-secondary" id="btnBackFromStats">Voltar</button>
+        <button class="btn btn-danger" id="btnResetStats">Limpar estatísticas</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Problem type definitions ──
+    const CATEGORIES = [
+      {
+        id: 'addition',
+        name: 'Adição',
+        types: [
+          { id: 'add-2-2', label: '2 + 2 dígitos' },
+          { id: 'add-3-3', label: '3 + 3 dígitos' },
+          { id: 'add-4-4', label: '4 + 4 dígitos' },
+          { id: 'add-5-5', label: '5 + 5 dígitos' },
+          { id: 'add-mix', label: 'Mix (2–5 dígitos)' },
+        ],
+      },
+      {
+        id: 'subtraction',
+        name: 'Subtração',
+        types: [
+          { id: 'sub-2-2', label: '2 − 2 dígitos' },
+          { id: 'sub-3-3', label: '3 − 3 dígitos' },
+          { id: 'sub-4-4', label: '4 − 4 dígitos' },
+          { id: 'sub-5-5', label: '5 − 5 dígitos' },
+          { id: 'sub-mix', label: 'Mix (2–5 dígitos)' },
+        ],
+      },
+      {
+        id: 'multiplication',
+        name: 'Multiplicação',
+        types: [
+          { id: 'mul-2-1', label: '2 × 1 dígito' },
+          { id: 'mul-2-2', label: '2 × 2 dígitos' },
+          { id: 'mul-3-2', label: '3 × 2 dígitos' },
+          { id: 'mul-3-3', label: '3 × 3 dígitos' },
+          { id: 'mul-11-2', label: '2 dígitos × 11' },
+          { id: 'mul-11-3', label: '3 dígitos × 11' },
+          { id: 'mul-11-4', label: '4 dígitos × 11' },
+        ],
+      },
+      {
+        id: 'division',
+        name: 'Divisão',
+        types: [
+          { id: 'div-2-1', label: '2 ÷ 1 dígito' },
+          { id: 'div-2-2', label: '2 ÷ 2 dígitos' },
+          { id: 'div-3-2', label: '3 ÷ 2 dígitos' },
+        ],
+      },
+      {
+        id: 'sqrt',
+        name: 'Raiz quadrada',
+        types: [
+          { id: 'sqrt-2', label: '2 dígitos' },
+          { id: 'sqrt-3', label: '3 dígitos' },
+          { id: 'sqrt-4', label: '4 dígitos' },
+        ],
+      },
+      {
+        id: 'percent',
+        name: 'Porcentagens',
+        types: [
+          { id: 'pct-easy', label: 'Fácil' },
+          { id: 'pct-medium', label: 'Médio' },
+          { id: 'pct-hard', label: 'Difícil' },
+        ],
+      },
+      {
+        id: 'weekday',
+        name: 'Dia da semana',
+        types: [
+          { id: 'weekday', label: 'Qualquer data' },
+        ],
+      },
+    ];
+
+    const TYPE_LABELS = {};
+    CATEGORIES.forEach(cat => cat.types.forEach(t => { TYPE_LABELS[t.id] = t.label; }));
+
+    const DAYS_PT = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+    const DAY_ALIASES = {
+      dom: 'domingo', domingo: 'domingo',
+      seg: 'segunda', segunda: 'segunda', 'segunda-feira': 'segunda',
+      ter: 'terça', terça: 'terça', terca: 'terça', 'terça-feira': 'terça', 'terca-feira': 'terça',
+      qua: 'quarta', quarta: 'quarta', 'quarta-feira': 'quarta',
+      qui: 'quinta', quinta: 'quinta', 'quinta-feira': 'quinta',
+      sex: 'sexta', sexta: 'sexta', 'sexta-feira': 'sexta',
+      sab: 'sábado', sábado: 'sábado', sabado: 'sábado',
+    };
+
+    // ── State ──
+    const STORAGE_KEY = 'mentalmath_stats_v1';
+    let selectedTypes = new Set();
+    let currentProblem = null;
+    let timerStart = null;
+    let timerInterval = null;
+    let waitingForNext = false;
+    let sessionCorrect = 0;
+    let sessionTotal = 0;
+
+    // ── Utilities ──
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function digitsRange(d) {
+      if (d === 1) return [1, 9];
+      const min = Math.pow(10, d - 1);
+      const max = Math.pow(10, d) - 1;
+      return [min, max];
+    }
+
+    function randomWithDigits(d) {
+      const [min, max] = digitsRange(d);
+      return randInt(min, max);
+    }
+
+    function pickDigitPair(typeId) {
+      const mixMatch = typeId.match(/^(add|sub)-mix$/);
+      if (mixMatch) {
+        return [randInt(2, 5), randInt(2, 5)];
+      }
+      const m = typeId.match(/^(add|sub)-(\d)-(\d)$/);
+      if (m) return [parseInt(m[2]), parseInt(m[3])];
+      return [2, 2];
+    }
+
+    // Zeller's congruence (Gregorian calendar)
+    function getWeekday(year, month, day) {
+      if (month < 3) { month += 12; year -= 1; }
+      const k = year % 100;
+      const j = Math.floor(year / 100);
+      const h = (day + Math.floor(13 * (month + 1) / 5) + k + Math.floor(k / 4) + Math.floor(j / 4) - 2 * j) % 7;
+      // h: 0=Sat, 1=Sun, 2=Mon, ...
+      const map = [6, 0, 1, 2, 3, 4, 5]; // index into DAYS_PT
+      return DAYS_PT[map[((h % 7) + 7) % 7]];
+    }
+
+    function normalizeDayAnswer(str) {
+      return (DAY_ALIASES[str.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')] ||
+        str.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+    }
+
+    function normalizeNumericAnswer(str) {
+      return str.trim().replace(/\s/g, '').replace(',', '.');
+    }
+
+    function formatTime(ms) {
+      const s = ms / 1000;
+      return s < 60 ? s.toFixed(2) + 's' : Math.floor(s / 60) + 'm ' + (s % 60).toFixed(1) + 's';
+    }
+
+    const PCT_EASY = [5, 10, 15, 20, 25, 30, 40, 50, 75, 100];
+    const PCT_MEDIUM = [5, 8, 10, 12, 15, 18, 20, 25, 30, 35, 40, 45, 50, 60, 75];
+    const PCT_HARD = [7, 11, 12, 13, 17, 18, 19, 22, 23, 27, 33, 37, 43, 47, 52, 63, 77, 88];
+    const VALUES_EASY = [20, 30, 40, 50, 60, 70, 75, 80, 90, 100, 120, 150, 200, 250, 300, 400, 500, 600, 800, 1000];
+
+    function pctAmount(value, pct) {
+      return (value * pct) / 100;
+    }
+
+    function roundMoney(n) {
+      return Math.round(n * 100) / 100;
+    }
+
+    function formatMoney(value) {
+      const n = roundMoney(value);
+      if (Number.isInteger(n)) return String(n);
+      return n.toFixed(2).replace('.', ',');
+    }
+
+    function formatAnswer(value) {
+      const n = typeof value === 'number' ? value : parseFloat(value);
+      if (Number.isInteger(n)) return String(n);
+      return n.toFixed(2).replace('.', ',');
+    }
+
+    function randomDecimalValue(minWhole, maxWhole) {
+      const whole = randInt(minWhole, maxWhole);
+      const cents = randInt(0, 99);
+      return roundMoney(whole + cents / 100);
+    }
+
+    function pickPctPair(level) {
+      const pctPool = level === 'easy' ? PCT_EASY : level === 'medium' ? PCT_MEDIUM : PCT_HARD;
+      if (level === 'hard') {
+        const pct = pctPool[randInt(0, pctPool.length - 1)];
+        const useDecimal = Math.random() < 0.55;
+        let value;
+        if (useDecimal) {
+          const size = randInt(0, 2);
+          if (size === 0) value = randomDecimalValue(10, 999);
+          else if (size === 1) value = randomDecimalValue(1000, 9999);
+          else value = randomDecimalValue(10000, 99999);
+        } else {
+          value = randomWithDigits(randInt(4, 5));
+        }
+        return { pct, value, decimal: !Number.isInteger(value) || useDecimal };
+      }
+      for (let i = 0; i < 80; i++) {
+        const pct = pctPool[randInt(0, pctPool.length - 1)];
+        let value;
+        if (level === 'easy') {
+          value = VALUES_EASY[randInt(0, VALUES_EASY.length - 1)];
+        } else {
+          value = randInt(10, 999);
+        }
+        if ((value * pct) % 100 === 0) return { pct, value, decimal: false };
+      }
+      return level === 'medium'
+        ? { pct: 10, value: 150, decimal: false }
+        : { pct: 10, value: 100, decimal: false };
+    }
+
+    function generatePercentProblem(typeId) {
+      const level = typeId.replace('pct-', '');
+      const ops = ['amount', 'discount', 'markup', 'tip'];
+      const op = ops[randInt(0, ops.length - 1)];
+      const { pct, value, decimal } = pickPctPair(level);
+      const amount = roundMoney(pctAmount(value, pct));
+      const valueDisplay = level === 'hard' ? formatMoney(value) : String(value);
+
+      let display, answer;
+      switch (op) {
+        case 'amount':
+          display = `${pct}% de ${valueDisplay}`;
+          answer = String(amount);
+          break;
+        case 'discount':
+          display = `${valueDisplay} com ${pct}% de desconto`;
+          answer = String(roundMoney(value - amount));
+          break;
+        case 'markup':
+          display = `${valueDisplay} com ${pct}% de acréscimo`;
+          answer = String(roundMoney(value + amount));
+          break;
+        case 'tip':
+          display = `Gorjeta de ${pct}% sobre ${valueDisplay}`;
+          answer = String(amount);
+          break;
+      }
+
+      return {
+        typeId,
+        display,
+        answer,
+        numeric: true,
+        decimalAnswer: level === 'hard' && (decimal || !Number.isInteger(parseFloat(answer))),
+        hint: level === 'hard' ? 'Use vírgula para decimais (ex: 6,70)' : undefined,
+      };
+    }
+
+    // ── Problem generators ──
+    function generateProblem(typeId) {
+      switch (typeId) {
+        case 'add-2-2': case 'add-3-3': case 'add-4-4': case 'add-5-5': case 'add-mix': {
+          const [d1, d2] = pickDigitPair(typeId);
+          const a = randomWithDigits(d1);
+          const b = randomWithDigits(d2);
+          return {
+            typeId,
+            display: `${a} + ${b}`,
+            answer: String(a + b),
+            numeric: true,
+          };
+        }
+
+        case 'sub-2-2': case 'sub-3-3': case 'sub-4-4': case 'sub-5-5': case 'sub-mix': {
+          const [d1, d2] = pickDigitPair(typeId.replace('sub', 'add'));
+          let a = randomWithDigits(d1);
+          let b = randomWithDigits(d2);
+          if (a < b) [a, b] = [b, a];
+          return {
+            typeId,
+            display: `${a} − ${b}`,
+            answer: String(a - b),
+            numeric: true,
+          };
+        }
+
+        case 'mul-2-1': {
+          const a = randomWithDigits(2);
+          const b = randomWithDigits(1);
+          return { typeId, display: `${a} × ${b}`, answer: String(a * b), numeric: true };
+        }
+        case 'mul-2-2': {
+          const a = randomWithDigits(2);
+          const b = randomWithDigits(2);
+          return { typeId, display: `${a} × ${b}`, answer: String(a * b), numeric: true };
+        }
+        case 'mul-3-2': {
+          const a = randomWithDigits(3);
+          const b = randomWithDigits(2);
+          return { typeId, display: `${a} × ${b}`, answer: String(a * b), numeric: true };
+        }
+        case 'mul-3-3': {
+          const a = randomWithDigits(3);
+          const b = randomWithDigits(3);
+          return { typeId, display: `${a} × ${b}`, answer: String(a * b), numeric: true };
+        }
+        case 'mul-11-2': {
+          const a = randomWithDigits(2);
+          return { typeId, display: `${a} × 11`, answer: String(a * 11), numeric: true };
+        }
+        case 'mul-11-3': {
+          const a = randomWithDigits(3);
+          return { typeId, display: `${a} × 11`, answer: String(a * 11), numeric: true };
+        }
+        case 'mul-11-4': {
+          const a = randomWithDigits(4);
+          return { typeId, display: `${a} × 11`, answer: String(a * 11), numeric: true };
+        }
+
+        case 'div-2-1': {
+          const divisor = randomWithDigits(1);
+          const quotient = randomWithDigits(2);
+          const dividend = divisor * quotient;
+          return { typeId, display: `${dividend} ÷ ${divisor}`, answer: String(quotient), numeric: true };
+        }
+        case 'div-2-2': {
+          for (let i = 0; i < 50; i++) {
+            const divisor = randomWithDigits(2);
+            const quotient = randInt(1, 9);
+            const dividend = divisor * quotient;
+            if (dividend >= 10 && dividend <= 99) {
+              return { typeId, display: `${dividend} ÷ ${divisor}`, answer: String(quotient), numeric: true };
+            }
+          }
+          return { typeId, display: `84 ÷ 12`, answer: '7', numeric: true };
+        }
+        case 'div-3-2': {
+          const divisor = randomWithDigits(2);
+          const quotient = randomWithDigits(2);
+          const dividend = divisor * quotient;
+          return { typeId, display: `${dividend} ÷ ${divisor}`, answer: String(quotient), numeric: true };
+        }
+
+        case 'sqrt-2': case 'sqrt-3': case 'sqrt-4': {
+          const digits = parseInt(typeId.split('-')[1]);
+          const candidates = [];
+          for (let r = 1; r <= 9999; r++) {
+            const sq = r * r;
+            if (String(sq).length === digits) candidates.push({ root: r, sq });
+          }
+          const pick = candidates[randInt(0, candidates.length - 1)];
+          return { typeId, display: `√${pick.sq}`, answer: String(pick.root), numeric: true };
+        }
+
+        case 'pct-easy': case 'pct-medium': case 'pct-hard':
+          return generatePercentProblem(typeId);
+
+        case 'weekday': {
+          const now = new Date();
+          const offsetYears = randInt(-30, 30);
+          const offsetDays = randInt(-180, 180);
+          const date = new Date(now.getFullYear() + offsetYears, now.getMonth(), now.getDate() + offsetDays);
+          const y = date.getFullYear();
+          const m = date.getMonth() + 1;
+          const d = date.getDate();
+          const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+          return {
+            typeId,
+            display: `${String(d).padStart(2, '0')} ${months[m - 1]} ${y}`,
+            answer: getWeekday(y, m, d),
+            numeric: false,
+            hint: 'Ex: segunda, terça, quarta…',
+          };
+        }
+
+        default:
+          return generateProblem('add-2-2');
+      }
+    }
+
+    function checkAnswer(problem, userAnswer) {
+      if (problem.numeric) {
+        const expected = normalizeNumericAnswer(problem.answer);
+        const given = normalizeNumericAnswer(userAnswer);
+        const expNum = parseFloat(expected);
+        const givNum = parseFloat(given);
+        if (!isNaN(expNum) && !isNaN(givNum)) {
+          if (problem.decimalAnswer) {
+            return roundMoney(givNum) === roundMoney(expNum);
+          }
+          return expNum === givNum;
+        }
+        return expected === given;
+      }
+      return normalizeDayAnswer(userAnswer) === normalizeDayAnswer(problem.answer);
+    }
+
+    // ── Stats (localStorage) ──
+    function loadStats() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+      } catch { return {}; }
+    }
+
+    function saveStats(stats) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+    }
+
+    function recordResult(typeId, correct, timeMs) {
+      const stats = loadStats();
+      if (!stats[typeId]) stats[typeId] = { total: 0, correct: 0, totalTimeMs: 0 };
+      stats[typeId].total++;
+      if (correct) stats[typeId].correct++;
+      stats[typeId].totalTimeMs += timeMs;
+      saveStats(stats);
+    }
+
+    // ── UI: Selection ──
+    function renderCategories() {
+      const container = document.getElementById('categories');
+      container.innerHTML = CATEGORIES.map(cat => `
+        <div class="category" data-cat="${cat.id}">
+          <div class="category-header">
+            <span>${cat.name}</span>
+            <span class="chevron">▾</span>
+          </div>
+          <div class="category-body">
+            ${cat.types.map(t => `
+              <button class="chip${selectedTypes.has(t.id) ? ' selected' : ''}" data-type="${t.id}">${t.label}</button>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      container.querySelectorAll('.category-header').forEach(header => {
+        header.addEventListener('click', () => {
+          header.parentElement.classList.toggle('open');
+        });
+      });
+
+      container.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = chip.dataset.type;
+          if (selectedTypes.has(id)) selectedTypes.delete(id);
+          else selectedTypes.add(id);
+          chip.classList.toggle('selected');
+          updateSelectionCount();
+        });
+      });
+
+      // Open first category by default
+      const first = container.querySelector('.category');
+      if (first) first.classList.add('open');
+    }
+
+    function updateSelectionCount() {
+      const n = selectedTypes.size;
+      document.getElementById('selectionCount').textContent =
+        n === 0 ? 'Nenhum tipo selecionado' :
+        n === 1 ? '1 tipo selecionado' :
+        `${n} tipos selecionados`;
+      document.getElementById('btnStart').disabled = n === 0;
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // ── UI: Practice ──
+    function startTimer() {
+      timerStart = performance.now();
+      const el = document.getElementById('timer');
+      el.classList.add('running');
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        el.textContent = formatTime(performance.now() - timerStart);
+      }, 50);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      document.getElementById('timer').classList.remove('running');
+      return performance.now() - timerStart;
+    }
+
+    function nextProblem() {
+      waitingForNext = false;
+      const types = [...selectedTypes];
+      const typeId = types[randInt(0, types.length - 1)];
+      currentProblem = generateProblem(typeId);
+
+      document.getElementById('problemLabel').textContent = TYPE_LABELS[typeId] || typeId;
+      document.getElementById('problem').textContent = currentProblem.display;
+      document.getElementById('answerHint').textContent =
+        currentProblem.hint || 'Pressione Enter para enviar';
+
+      const input = document.getElementById('answerInput');
+      input.value = '';
+      input.className = 'answer-input';
+      input.disabled = false;
+      input.inputMode = currentProblem.decimalAnswer ? 'decimal'
+        : currentProblem.numeric ? 'numeric' : 'text';
+      document.getElementById('feedback').textContent = '';
+      document.getElementById('feedback').className = 'feedback';
+
+      startTimer();
+      input.focus();
+    }
+
+    function handleSubmit() {
+      if (waitingForNext || !currentProblem) return;
+
+      const input = document.getElementById('answerInput');
+      const userAnswer = input.value.trim();
+      if (!userAnswer) return;
+
+      const elapsed = stopTimer();
+      const correct = checkAnswer(currentProblem, userAnswer);
+      waitingForNext = true;
+      input.disabled = true;
+
+      sessionTotal++;
+      if (correct) sessionCorrect++;
+
+      recordResult(currentProblem.typeId, correct, elapsed);
+
+      const feedback = document.getElementById('feedback');
+      if (correct) {
+        input.classList.add('correct');
+        feedback.textContent = `✓ Correto! (${formatTime(elapsed)})`;
+        feedback.className = 'feedback correct';
+      } else {
+        input.classList.add('wrong');
+        const ansDisplay = currentProblem.numeric
+          ? formatAnswer(currentProblem.answer)
+          : currentProblem.answer.charAt(0).toUpperCase() + currentProblem.answer.slice(1);
+        feedback.textContent = `✗ Errado — resposta: ${ansDisplay} (${formatTime(elapsed)})`;
+        feedback.className = 'feedback wrong';
+      }
+
+      document.getElementById('sessionScore').textContent = `${sessionCorrect} acertos`;
+      document.getElementById('sessionTotal').textContent = `${sessionTotal} contas`;
+
+      setTimeout(nextProblem, correct ? 600 : 1800);
+    }
+
+    function startPractice() {
+      sessionCorrect = 0;
+      sessionTotal = 0;
+      document.getElementById('sessionScore').textContent = '0 acertos';
+      document.getElementById('sessionTotal').textContent = '0 contas';
+      showScreen('screenPractice');
+      nextProblem();
+    }
+
+    function stopPractice() {
+      clearInterval(timerInterval);
+      waitingForNext = false;
+      currentProblem = null;
+      showScreen('screenSelect');
+    }
+
+    // ── UI: Stats ──
+    function renderStats() {
+      const stats = loadStats();
+      const container = document.getElementById('statsList');
+      const entries = Object.entries(stats).filter(([, v]) => v.total > 0);
+
+      if (entries.length === 0) {
+        container.innerHTML = '<div class="empty-stats">Nenhuma estatística ainda.<br>Comece a treinar!</div>';
+        return;
+      }
+
+      entries.sort((a, b) => b[1].total - a[1].total);
+
+      container.innerHTML = entries.map(([typeId, s]) => {
+        const avgMs = s.totalTimeMs / s.total;
+        const pctCorrect = Math.round((s.correct / s.total) * 100);
+        const pctWrong = 100 - pctCorrect;
+        const label = TYPE_LABELS[typeId] || typeId;
+        const cat = CATEGORIES.find(c => c.types.some(t => t.id === typeId));
+        return `
+          <div class="stat-card">
+            <h3>${cat ? cat.name + ' — ' : ''}${label}</h3>
+            <div class="stat-grid">
+              <div class="stat-item">
+                <div class="value">${s.total}</div>
+                <div class="label">Contas</div>
+              </div>
+              <div class="stat-item">
+                <div class="value">${formatTime(avgMs)}</div>
+                <div class="label">Tempo médio</div>
+              </div>
+              <div class="stat-item">
+                <div class="value">${pctCorrect}%</div>
+                <div class="label">Acertos</div>
+              </div>
+            </div>
+            <div class="accuracy-bar">
+              <div class="correct-part" style="width:${pctCorrect}%"></div>
+              <div class="wrong-part" style="width:${pctWrong}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ── Event listeners ──
+    document.getElementById('btnStart').addEventListener('click', startPractice);
+    document.getElementById('btnStop').addEventListener('click', stopPractice);
+
+    document.getElementById('answerForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleSubmit();
+    });
+
+    document.getElementById('btnStats').addEventListener('click', () => {
+      renderStats();
+      showScreen('screenStats');
+    });
+
+    document.getElementById('btnBackFromStats').addEventListener('click', () => {
+      showScreen('screenSelect');
+    });
+
+    document.getElementById('btnResetStats').addEventListener('click', () => {
+      if (confirm('Limpar todas as estatísticas? Esta ação não pode ser desfeita.')) {
+        localStorage.removeItem(STORAGE_KEY);
+        renderStats();
+      }
+    });
+
+    // Init
+    renderCategories();
+    updateSelectionCount();
+  </script>
+</body>
+</html>
