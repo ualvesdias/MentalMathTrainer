@@ -1008,9 +1008,10 @@
       handleSubmit();
     });
 
-    const btnSubmit = document.getElementById('btnSubmit');
-    btnSubmit.addEventListener('mousedown', (e) => e.preventDefault());
-    btnSubmit.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+    document.getElementById('btnSubmit').addEventListener('click', () => {
+      setTimeout(focusAnswerInput, 0);
+      setTimeout(focusAnswerInput, 100);
+    });
 
     document.getElementById('btnStats').addEventListener('click', () => {
       renderStats();
