@@ -189,7 +189,18 @@
     .answer-form {
       width: 100%;
       max-width: 280px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
+
+    .btn-submit {
+      padding: 14px;
+      font-size: 1rem;
+      min-height: 48px;
+      touch-action: manipulation;
+    }
+    .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .answer-input {
       width: 100%;
@@ -347,7 +358,8 @@
             enterkeyhint="done"
             placeholder="Resposta"
           >
-          <p class="hint" id="answerHint">Pressione Enter para enviar</p>
+          <button type="submit" class="btn btn-primary btn-submit" id="btnSubmit">Enviar</button>
+          <p class="hint" id="answerHint">Enter ou Enviar</p>
         </form>
         <div class="feedback" id="feedback"></div>
         <div class="practice-meta">
@@ -856,12 +868,14 @@
       document.getElementById('problemLabel').textContent = TYPE_LABELS[typeId] || typeId;
       document.getElementById('problem').textContent = currentProblem.display;
       document.getElementById('answerHint').textContent =
-        currentProblem.hint || 'Pressione Enter para enviar';
+        currentProblem.hint ? `${currentProblem.hint} · Enter ou Enviar` : 'Enter ou Enviar';
 
       const input = document.getElementById('answerInput');
+      const btnSubmit = document.getElementById('btnSubmit');
       input.value = '';
       input.className = 'answer-input';
       input.disabled = false;
+      btnSubmit.disabled = false;
       input.inputMode = currentProblem.decimalAnswer ? 'decimal'
         : currentProblem.numeric ? 'numeric' : 'text';
       document.getElementById('feedback').textContent = '';
@@ -882,6 +896,7 @@
       const correct = checkAnswer(currentProblem, userAnswer);
       waitingForNext = true;
       input.disabled = true;
+      document.getElementById('btnSubmit').disabled = true;
 
       sessionTotal++;
       if (correct) sessionCorrect++;
