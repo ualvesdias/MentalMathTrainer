@@ -859,6 +859,22 @@
       return performance.now() - timerStart;
     }
 
+    function focusAnswerInput() {
+      const input = document.getElementById('answerInput');
+      if (!input || input.disabled) return;
+      input.focus({ preventScroll: true });
+      requestAnimationFrame(() => {
+        input.focus({ preventScroll: true });
+        setTimeout(() => input.focus({ preventScroll: true }), 50);
+      });
+    }
+
+    function setAnswerInputLocked(locked) {
+      const input = document.getElementById('answerInput');
+      input.readOnly = locked;
+      document.getElementById('btnSubmit').disabled = locked;
+    }
+
     function nextProblem() {
       waitingForNext = false;
       const types = [...selectedTypes];
@@ -871,18 +887,17 @@
         currentProblem.hint ? `${currentProblem.hint} · Enter ou Enviar` : 'Enter ou Enviar';
 
       const input = document.getElementById('answerInput');
-      const btnSubmit = document.getElementById('btnSubmit');
       input.value = '';
       input.className = 'answer-input';
       input.disabled = false;
-      btnSubmit.disabled = false;
+      setAnswerInputLocked(false);
       input.inputMode = currentProblem.decimalAnswer ? 'decimal'
         : currentProblem.numeric ? 'numeric' : 'text';
       document.getElementById('feedback').textContent = '';
       document.getElementById('feedback').className = 'feedback';
 
       startTimer();
-      input.focus();
+      focusAnswerInput();
     }
 
     function handleSubmit() {
@@ -895,8 +910,8 @@
       const elapsed = stopTimer();
       const correct = checkAnswer(currentProblem, userAnswer);
       waitingForNext = true;
-      input.disabled = true;
-      document.getElementById('btnSubmit').disabled = true;
+      setAnswerInputLocked(true);
+      focusAnswerInput();
 
       sessionTotal++;
       if (correct) sessionCorrect++;
@@ -992,6 +1007,10 @@
       e.preventDefault();
       handleSubmit();
     });
+
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.addEventListener('mousedown', (e) => e.preventDefault());
+    btnSubmit.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
 
     document.getElementById('btnStats').addEventListener('click', () => {
       renderStats();
